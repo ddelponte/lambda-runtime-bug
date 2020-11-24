@@ -1,18 +1,19 @@
 package com.genalpha
+
 import com.amazonaws.serverless.proxy.internal.testutils.AwsProxyRequestBuilder
 import com.amazonaws.serverless.proxy.internal.testutils.MockLambdaContext
 import com.amazonaws.serverless.proxy.model.AwsProxyRequest
 import com.amazonaws.serverless.proxy.model.AwsProxyResponse
 import com.amazonaws.services.lambda.runtime.Context
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.micronaut.function.aws.proxy.MicronautLambdaHandler
 import io.micronaut.http.HttpHeaders
 import io.micronaut.http.HttpMethod
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
-import spock.lang.Specification
-import spock.lang.Shared
 import spock.lang.AutoCleanup
-import io.micronaut.function.aws.proxy.MicronautLambdaHandler
+import spock.lang.Shared
+import spock.lang.Specification
 
 class BookControllerSpec extends Specification {
 
@@ -48,5 +49,18 @@ class BookControllerSpec extends Specification {
         then:
         bookSaved.name == book.name
         bookSaved.isbn
+    }
+
+    void "demo QueryValue annotation bug"() {
+        when: "a request with query params is made"
+        AwsProxyRequest request = new AwsProxyRequestBuilder("/search", HttpMethod.GET.toString())
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN)
+                .queryString("searchText", "derp")
+                .build()
+        AwsProxyResponse response = handler.handleRequest(request, lambdaContext)
+
+        then: "the query params are  properly set"
+        HttpStatus.OK.code == response.statusCode
+        response.getBody() == "Your searchText = derp"
     }
 }
